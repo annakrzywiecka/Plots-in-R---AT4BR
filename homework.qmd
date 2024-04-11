@@ -1,0 +1,126 @@
+---
+title: "plots_tidyR_Anna_Krzywiecka_2024_04_10"
+author: "Anna Krzywiecka"
+format: html
+editor: visual
+---
+
+## Plan
+
+Use tidyr and dplyr libraries whenever possible, to do the following:
+
+1- Load the "iris" dataset.
+
+2- Transform it to longer (tip: you should get 3 columns Species \| Trait \| Size )
+
+3- Answer the following questions. (tip: you can answer each question "piping" only 2-3 commands )
+
+A\) What is the mean length and width of the sepal and petal of each species?
+
+B\) What is the largest and widest, petal and sepal, of virginica and versicolor species?
+
+C\) For each species, for sepal and petal, width and length, how many observations are above the mean?
+
+## Task 1
+
+Load the "iris" dataset.
+
+```{r}
+library(tidyr)
+library(dplyr)
+library(readr)
+```
+
+```{r}
+data("iris")
+glimpse(iris)
+```
+
+`data(iris)` simply downloads the data about flowers into the working space.
+
+`glimpse(iris)` - allows us to see how the data look like.
+
+## Task 2
+
+Transform it to longer (tip: you should get 3 columns Species \| Trait \| Size )
+
+```{r}
+iris %>% 
+  tidyr::pivot_longer(cols=matches("Sepal|Petal"), names_to = "Trait", values_to = "Size") 
+  
+```
+
+`tidyr::pivot_longer` - makes the data longer from a wider format. `cols=matches("Sepal|Petal")` chooses only the columns that contain words *Sepal* and *Petal* and create one big column out of their names with a heading: *Trait* and the values into a column with a heading *Size*.
+
+## Task 3A
+
+What is the mean length and width of the sepal and petal of each species?
+
+```{r}
+iris %>%
+  group_by(Species) %>% 
+  summarise(Mean_sl= mean(Sepal.Length), Mean_pl= mean(Petal.Length), Mean_sw= mean(Sepal.Width), Mean_pw= mean(Petal.Width))
+```
+
+`group_by(Species)` invisibly groups data by Species.
+
+`summarise()` sumarises the iris data and shows the mean values for each of the Traits in columns with a name consisting of *Mean\_* and of two first letters of the Trait name for each Species (thanks to `groupby` before).
+
+## Task 3B
+
+What is the largest and widest, petal and sepal, of virginica and versicolor species?
+
+```{r}
+iris %>%
+  dplyr::filter(Species %in% c('virginica', 'versicolor')) %>%
+  group_by(Species) %>%
+  summarise(Max_sl = max(Sepal.Length), Max_pl= max(Petal.Length), Max_sw= max(Sepal.Width), Max_pw= max(Petal.Width))
+
+```
+
+`dplyr::filter(Species %in% c('virginica', 'versicolor'))` filters out only the records of species we want to analyse now.
+
+`group_by(Species)` - groups by Species invisibly(only from the two groups)
+
+`max()` chooses the highest value from the argument which can be a list, column, row or tuples.
+
+`summarise()` sumarises the iris data and shows the max values for each of the Traits in columns with a name consisting *Max\_* and of two first letters of the Trait name. It happens for both chosen Species (thanks to groupby before).
+
+```{r}
+iris  %>%
+  group_by(Species) %>%
+  summarise(Max_sl = max(Sepal.Length), Max_pl= max(Petal.Length), Max_sw= max(Sepal.Width), Max_pw= max(Petal.Width))
+```
+
+## Task 3C
+
+C\) For each species, for sepal and petal, width and length, how many observations are above the mean?
+
+```{r}
+iris %>%
+  group_by(Species) %>%
+    mutate(Mean_sl= mean(Sepal.Length), Mean_pl= mean(Petal.Length), Mean_sw= mean(Sepal.Width), Mean_pw= mean(Petal.Width)) %>%
+  mutate(SL = Mean_sl < Sepal.Length, PL = Mean_pl < Petal.Length, SW = Mean_sw < Sepal.Width, PW = Mean_pw < Petal.Width) %>%
+  summarise(SL_greater = sum(SL == TRUE), PL_greater = sum(PL == TRUE), SW_greater = sum(SW == TRUE), PW_greater = sum(PW == TRUE))
+
+
+
+```
+
+STEPS OF CREATING:
+
+`group_by(Species)` groups by *Species* invisibly.
+
+first `mutate()` adds our new columns consisting of mean values for all the trait calculated for each Species separately. Insight in a variable first_mutate:
+
+```{r}
+first_mutate <- iris %>%
+  group_by(Species) %>%
+    mutate(Mean_sl= mean(Sepal.Length), Mean_pl= mean(Petal.Length), Mean_sw= mean(Sepal.Width), Mean_pw= mean(Petal.Width)) 
+
+first_mutate
+```
+
+second `mutate()` - adds four new columns of TRUEs and FALSEs depending on the outcome of comparison: `Mean() < value` for traits for each Species. So if a TRUE is in a column SL_greater it means that this particular trait is above mean.
+
+Than thanks to the `sum()` we count in how many cells we have a TRUE in every column. We pack this sums into variables: SL_greater, PL_greater , SW_greater, PW_greater. Than we `summarise()` this information for each species..
